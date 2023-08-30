@@ -1,2 +1,2 @@
 # PU-Learning-CNN
-Thesis Subject
+Submitted as part of my thesis in the University of Thessaly
