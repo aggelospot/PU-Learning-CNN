@@ -33,7 +33,7 @@ def runCnnPU():
 
 def beginCrossValidation(x_train, y_train, N, k, pu=True):
     # Create a dataframe for our results
-    columns = ['log_ratio']
+    columns = ['conv_ratio']
     for i in range(0, k):
         columns.append('fold' + str(i + 1))
     columns.append('mean')
@@ -43,13 +43,13 @@ def beginCrossValidation(x_train, y_train, N, k, pu=True):
 
     if (pu):
         # Cross validate N times for each convertion ratio. The ratio is increased by 10% in each step
-        for log_ratio in range(5, 95, 10):
-            print(f"Current log ratio: {log_ratio}%")
+        for conv_ratio in range(5, 95, 10):
+            print(f"Current conversion ratio: {conv_ratio}%")
             for n in range(0, N):
                 print(f"Model: {n} out of {N}")
-                curr_accuracies, mean_accuracy, standard_dev = cross_validate(x_train, y_train, K=k, log_ratio=log_ratio / 100, pu=True)
+                curr_accuracies, mean_accuracy, standard_dev = cross_validate(x_train, y_train, K=k, conv_ratio=conv_ratio / 100, pu=True)
 
-                curr_accuracies.insert(0, log_ratio)
+                curr_accuracies.insert(0, conv_ratio)
                 curr_accuracies.append(mean_accuracy)
                 curr_accuracies.append(standard_dev)
                 # print("Length of curr_accuracies:", len(curr_accuracies))
@@ -86,7 +86,7 @@ def beginCrossValidation(x_train, y_train, N, k, pu=True):
         return
 
 # Perform k-fold cross validation
-def cross_validate(x_train, y_train, K=5, log_ratio=0.05, pu=True):
+def cross_validate(x_train, y_train, K=5, conv_ratio=0.05, pu=True):
     # Create an instance of StratifiedKFold with the desired number of folds
     skf = StratifiedKFold(n_splits=K, random_state=seed, shuffle=True)
 
@@ -98,7 +98,7 @@ def cross_validate(x_train, y_train, K=5, log_ratio=0.05, pu=True):
 
         if (pu):
             # Generate pu training data using the fold's train labels
-            y_train_pu = convert_to_PU(y_train[train], log_ratio=log_ratio)
+            y_train_pu = convert_to_PU(y_train[train], conv_ratio=conv_ratio)
 
             sc_compliant_model = KerasClassifier(model=create_binary_model(), epochs=50, batch_size=64, verbose=1)
 
@@ -177,12 +177,12 @@ def load_cifar_dataset_binary(classA=3, classB=5):
 
 # Convert a binary label array to PU by switching zeroes to -1.
 # Also converts a percentage of the positive examples to unlabeled
-def convert_to_PU(y_train, log_ratio):
+def convert_to_PU(y_train, conv_ratio):
     # Positive labels
     y_positive = np.where(y_train == 1)
 
     # Select a ratio of the positive labels to convert to unlabeled
-    neg_length = int(log_ratio * len(y_positive[0]))
+    neg_length = int(conv_ratio * len(y_positive[0]))
     pos_to_neg = np.random.choice(len(y_positive[0]), size=neg_length, replace=False)
     pos_to_neg = y_positive[0][pos_to_neg]
 
@@ -249,50 +249,9 @@ def normalCNN():
     correctPreds = x_test[preds == y_test.squeeze()]
     print("Correct predictions: ", len(correctPreds), ". Accuracy: ", len(correctPreds) / len(y_test))
 
+
+
+
 if __name__ == '__main__':
     runCnnPU()
     # normalCNN()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# def plot():
-#     # Log ratios
-#     log_ratios = [0, 0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85]
-#
-#     # Accuracies in percentage
-#     accuracies = [71.85, 70.29, 68.91, 68.35, 67.06, 65.28, 65.12, 64.29, 62.96, 61.12]
-#     accuracies = [x / 100 for x in accuracies]  # Convert to decimal
-#
-#     # Create the plot
-#     plt.figure(figsize=(10, 6))
-#     plt.plot(log_ratios, accuracies, marker='o')
-#
-#     # Add labels and title
-#     plt.xlabel('Log Ratio (%)')
-#     plt.ylabel('Accuracy (%)')
-#     plt.title('Accuracy vs Log Ratio')
-#
-#     # Show the grid
-#     plt.grid(True)
-#
-#     # Format y-axis and x-axis to show percentages
-#     plt.gca().yaxis.set_major_formatter(mticker.PercentFormatter(1))
-#     plt.gca().xaxis.set_major_formatter(mticker.PercentFormatter(1))
-#
-#     # Show the plot
-#     plt.show()
